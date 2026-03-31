@@ -1,0 +1,110 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /var/lib/promtail/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: npm_access
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: npm
+          log_type: access
+          __path__: /var/log/npm/*_access.log
+    pipeline_stages:
+      - regex:
+          source: filename
+          expression: '.*/proxy-host-(?P<proxy_host_id>\d+)_access\.log$'
+      - regex:
+          expression: '^\[(?P<time_local>[^\]]+)\]\s+-\s+(?P<status>\d{3})\s+(?P<upstream_status>\S+)\s+-\s+(?P<method>[A-Z]+)\s+(?P<scheme>\S+)\s+(?P<vhost>\S+)\s+"(?P<path>[^"]*)"\s+\[Client\s+(?P<remote_addr>[^\]]+)\]\s+\[Length\s+(?P<body_bytes_sent>[^\]]+)\]\s+\[Gzip\s+(?P<gzip>[^\]]+)\]\s+\[Sent-to\s+(?P<sent_to>[^\]]+)\]\s+"(?P<user_agent>[^"]*)"\s+"(?P<referer>[^"]*)"\s*$'
+      - timestamp:
+          source: time_local
+          format: 02/Jan/2006:15:04:05 -0700
+      - regex:
+          source: status
+          expression: '^(?P<status_digit>[0-9]).*$'
+      - template:
+          source: status_class
+          template: '{{ if eq .status_digit "2" }}2xx{{ else if eq .status_digit "3" }}3xx{{ else if eq .status_digit "4" }}4xx{{ else if eq .status_digit "5" }}5xx{{ else }}other{{ end }}'
+      - template:
+          source: vhost_name
+          template: '{{ if and .vhost (ne .vhost "<no value>") }}{{ .vhost }}{{ else }}unknown{{ end }}'
+      - template:
+          source: proxy_name
+          template: '{{ if and .vhost_name (ne .vhost_name "unknown") }}{{ .vhost_name }}{{ else }}proxy-{{ .proxy_host_id }}{{ end }}'
+      - template:
+          source: parse_state
+          template: '{{ if and .status .method (ne .status "<no value>") (ne .method "<no value>") }}parsed{{ else }}unparsed{{ end }}'
+      - labels:
+          proxy_host_id:
+          proxy_name:
+          vhost_name:
+          parse_state:
+          status_class:
+      - match:
+          selector: '{parse_state="unparsed"}'
+          action: drop
+          drop_counter_reason: access_unparsed_line
+      - match:
+          selector: '{parse_state="parsed"}'
+          stages:
+            - template:
+                source: message_json
+                template: '{"proxy_id":"{{ .proxy_host_id }}","vhost":"{{ .proxy_name }}","scheme":"{{ .scheme }}","method":"{{ .method }}","path":"{{ .path }}","status":"{{ .status }}","upstream_status":"{{ .upstream_status }}","status_class":"{{ .status_class }}","client_ip":"{{ .remote_addr }}","bytes_sent":"{{ .body_bytes_sent }}","gzip":"{{ .gzip }}","sent_to":"{{ .sent_to }}","referer":"{{ .referer }}","user_agent":"{{ .user_agent }}"}'
+            - output:
+                source: message_json
+
+  - job_name: npm_error
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: npm
+          log_type: error
+          __path__: /var/log/npm/*_error.log
+    pipeline_stages:
+      - regex:
+          source: filename
+          expression: '.*/proxy-host-(?P<proxy_host_id>\d+)_error\.log$'
+      - regex:
+          expression: '^(?P<time_local>\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}) \[(?P<level>[^\]]+)\] (?P<rest>.*)$'
+      - timestamp:
+          source: time_local
+          format: 2006/01/02 15:04:05
+      - labels:
+          proxy_host_id:
+          level:
+      - template:
+          source: message_json
+          template: '{"proxy_id":"{{ .proxy_host_id }}","level":"{{ .level }}","message":"{{ .rest }}"}'
+      - output:
+          source: message_json
+
+  - job_name: npm_fallback_error
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: npm
+          log_type: fallback_error
+          proxy_host_id: fallback
+          __path__: /var/log/npm/fallback_error.log
+    pipeline_stages:
+      - regex:
+          expression: '^(?P<time_local>\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}) \[(?P<level>[^\]]+)\] (?P<rest>.*)$'
+      - timestamp:
+          source: time_local
+          format: 2006/01/02 15:04:05
+      - labels:
+          level:
+      - template:
+          source: message_json
+          template: '{"proxy_id":"fallback","level":"{{ .level }}","message":"{{ .rest }}"}'
+      - output:
+          source: message_json

@@ -1,0 +1,407 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": { "type": "loki", "uid": "loki" },
+      "description": "Request volume grouped by HTTP status class (2xx/3xx/4xx/5xx) over time.",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "2xx" }, "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "3xx" }, "properties": [{ "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "4xx" }, "properties": [{ "id": "color", "value": { "fixedColor": "yellow", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "5xx" }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }] }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "legend": { "calcs": ["sum"], "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "sum by (status_class) (count_over_time({job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"}[$__interval]))",
+          "legendFormat": "{{status_class}}",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Requests by Status Class",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "loki", "uid": "loki" },
+      "description": "Request volume per virtual host over time.",
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 0 },
+      "id": 2,
+      "options": {
+        "legend": { "calcs": ["sum"], "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "sum by (proxy_name) (count_over_time({job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"}[$__interval]))",
+          "legendFormat": "{{proxy_name}}",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Request Rate by Vhost",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "loki", "uid": "loki" },
+      "description": "Only 4xx and 5xx errors, broken down by vhost and status class.",
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 0 },
+      "id": 3,
+      "options": {
+        "legend": { "calcs": ["sum"], "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "sum by (proxy_name, status_class) (count_over_time({job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\",status_class=~\"4xx|5xx\"}[$__interval]))",
+          "legendFormat": "{{proxy_name}} {{status_class}}",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "4xx/5xx Error Rate by Vhost",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "loki", "uid": "loki" },
+      "description": "Response body size percentiles across all selected vhosts.",
+      "fieldConfig": {
+        "defaults": { "unit": "decbytes" },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "id": 4,
+      "options": {
+        "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "quantile_over_time(0.50, {job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"} | json | unwrap bytes_sent | __error__=\"\" [$__interval]) by (proxy_name)",
+          "legendFormat": "{{proxy_name}} p50",
+          "queryType": "range",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "quantile_over_time(0.95, {job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"} | json | unwrap bytes_sent | __error__=\"\" [$__interval]) by (proxy_name)",
+          "legendFormat": "{{proxy_name}} p95",
+          "queryType": "range",
+          "refId": "B"
+        },
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "quantile_over_time(0.99, {job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"} | json | unwrap bytes_sent | __error__=\"\" [$__interval]) by (proxy_name)",
+          "legendFormat": "{{proxy_name}} p99",
+          "queryType": "range",
+          "refId": "C"
+        }
+      ],
+      "title": "Response Size Percentiles",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "loki", "uid": "loki" },
+      "description": "Proportion of each HTTP status code over the selected time range.",
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "id": 5,
+      "options": {
+        "displayLabels": ["name", "percent"],
+        "legend": { "displayMode": "table", "placement": "right", "showLegend": true, "values": ["value", "percent"] },
+        "pieType": "donut",
+        "reduceOptions": { "calcs": ["sum"], "fields": "", "values": false },
+        "tooltip": { "mode": "single", "sort": "none" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "sum by (status_class) (count_over_time({job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"}[$__interval]))",
+          "legendFormat": "{{status_class}}",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Status Class Distribution",
+      "type": "piechart"
+    },
+    {
+      "datasource": { "type": "loki", "uid": "loki" },
+      "description": "Top 25 most-requested URL paths over the selected time range.",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "path" }, "properties": [{ "id": "displayName", "value": "Path" }] },
+          { "matcher": { "id": "byName", "options": "Value #A" }, "properties": [{ "id": "displayName", "value": "Requests" }] }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 16 },
+      "id": 6,
+      "options": {
+        "showHeader": true,
+        "sortBy": [{ "desc": true, "displayName": "Value #A" }],
+        "footer": { "show": false }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "topk(25, sum by (path) (count_over_time({job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"} | json [$__range])))",
+          "legendFormat": "",
+          "queryType": "instant",
+          "refId": "A"
+        }
+      ],
+      "title": "Top Requested Paths",
+      "transformations": [
+        { "id": "labelsToFields", "options": {} },
+        {
+          "id": "sortBy",
+          "options": { "fields": {}, "sort": [{ "field": "Value #A", "desc": true }] }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true, "job": true, "log_type": true, "parse_state": true, "proxy_name": true, "proxy_host_id": true, "vhost_name": true, "status_class": true },
+            "indexByName": {},
+            "renameByName": { "path": "Path", "Value #A": "Requests" }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "loki", "uid": "loki" },
+      "description": "Top 25 client IP addresses by request volume over the selected time range.",
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "client_ip" }, "properties": [{ "id": "displayName", "value": "Client IP" }] },
+          { "matcher": { "id": "byName", "options": "Value #A" }, "properties": [{ "id": "displayName", "value": "Requests" }] }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 16 },
+      "id": 7,
+      "options": {
+        "showHeader": true,
+        "sortBy": [{ "desc": true, "displayName": "Value #A" }],
+        "footer": { "show": false }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "topk(25, sum by (client_ip) (count_over_time({job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"} | json [$__range])))",
+          "legendFormat": "",
+          "queryType": "instant",
+          "refId": "A"
+        }
+      ],
+      "title": "Top Client IPs",
+      "transformations": [
+        { "id": "labelsToFields", "options": {} },
+        {
+          "id": "sortBy",
+          "options": { "fields": {}, "sort": [{ "field": "Value #A", "desc": true }] }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true, "job": true, "log_type": true, "parse_state": true, "proxy_name": true, "proxy_host_id": true, "vhost_name": true, "status_class": true },
+            "indexByName": {},
+            "renameByName": { "client_ip": "Client IP", "Value #A": "Requests" }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "loki", "uid": "loki" },
+      "description": "Proportion of HTTPS vs HTTP traffic over the selected time range.",
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 16 },
+      "id": 8,
+      "options": {
+        "displayLabels": ["name", "percent"],
+        "legend": { "displayMode": "table", "placement": "right", "showLegend": true, "values": ["value", "percent"] },
+        "pieType": "donut",
+        "reduceOptions": { "calcs": ["sum"], "fields": "", "values": false },
+        "tooltip": { "mode": "single", "sort": "none" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "sum by (scheme) (count_over_time({job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"} | json [$__interval]))",
+          "legendFormat": "{{scheme}}",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "HTTP vs HTTPS",
+      "type": "piechart"
+    },
+    {
+      "datasource": { "type": "loki", "uid": "loki" },
+      "description": "Top 25 user agent strings by request volume over the selected time range.",
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 24 },
+      "id": 9,
+      "options": {
+        "showHeader": true,
+        "sortBy": [{ "desc": true, "displayName": "Value #A" }],
+        "footer": { "show": false }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "topk(25, sum by (user_agent) (count_over_time({job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"} | json [$__range])))",
+          "legendFormat": "",
+          "queryType": "instant",
+          "refId": "A"
+        }
+      ],
+      "title": "Top User Agents",
+      "transformations": [
+        { "id": "labelsToFields", "options": {} },
+        {
+          "id": "sortBy",
+          "options": { "fields": {}, "sort": [{ "field": "Value #A", "desc": true }] }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true, "job": true, "log_type": true, "parse_state": true, "proxy_name": true, "proxy_host_id": true, "vhost_name": true, "status_class": true },
+            "indexByName": {},
+            "renameByName": { "user_agent": "User Agent", "Value #A": "Requests" }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "loki", "uid": "loki" },
+      "description": "Live stream of parsed access log entries.",
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 32 },
+      "id": 10,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": true,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "{job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"} | json",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Recent Access Logs",
+      "type": "logs"
+    },
+    {
+      "datasource": { "type": "loki", "uid": "loki" },
+      "description": "Live stream of error log entries from proxy hosts and the fallback log.",
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 32 },
+      "id": 11,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": true,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "{job=\"npm\",log_type=~\"error|fallback_error\",proxy_host_id=~\"$proxy_host_id|fallback\"} | json",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Recent Error Logs",
+      "type": "logs"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["nginx-proxy-manager", "loki"],
+  "templating": {
+    "list": [
+      {
+        "current": { "selected": true, "text": "All", "value": "$__all" },
+        "datasource": { "type": "loki", "uid": "loki" },
+        "definition": "label_values({job=\"npm\",log_type=\"access\",parse_state=\"parsed\"}, proxy_name)",
+        "hide": 0,
+        "includeAll": true,
+        "multi": true,
+        "name": "proxy_name",
+        "options": [],
+        "query": "label_values({job=\"npm\",log_type=\"access\",parse_state=\"parsed\"}, proxy_name)",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": { "selected": true, "text": "All", "value": "$__all" },
+        "datasource": { "type": "loki", "uid": "loki" },
+        "definition": "label_values({job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"}, proxy_host_id)",
+        "hide": 2,
+        "includeAll": true,
+        "multi": true,
+        "name": "proxy_host_id",
+        "options": [],
+        "query": "label_values({job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"}, proxy_host_id)",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": true,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": { "from": "now-6h", "to": "now" },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Nginx Proxy Manager Logs",
+  "uid": "npm-logs-overview",
+  "version": 8,
+  "weekStart": ""
+}
