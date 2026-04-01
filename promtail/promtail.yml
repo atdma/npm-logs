@@ -44,9 +44,7 @@ scrape_configs:
       - labels:
           proxy_host_id:
           proxy_name:
-          vhost_name:
           parse_state:
-          status_class:
       - match:
           selector: '{parse_state="unparsed"}'
           action: drop

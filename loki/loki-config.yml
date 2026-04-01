@@ -37,6 +37,7 @@ limits_config:
   ingestion_rate_mb: 8
   ingestion_burst_size_mb: 16
   max_line_size: 512000
+  max_query_series: 5000
 
 query_range:
   align_queries_with_step: true
