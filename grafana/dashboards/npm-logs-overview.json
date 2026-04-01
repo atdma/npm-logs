@@ -39,7 +39,7 @@
       "targets": [
         {
           "datasource": { "type": "loki", "uid": "loki" },
-          "expr": "sum by (status_class) (count_over_time({job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"} | json status_class [$__interval]))",
+          "expr": "sum by (status_class) (count_over_time({job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"} |= `$client_ip` |= `$user_agent` | json status_class, scheme | status_class=~`$status_class` | scheme=~`$scheme` [$__interval]))",
           "legendFormat": "{{status_class}}",
           "queryType": "range",
           "refId": "A"
@@ -61,7 +61,7 @@
       "targets": [
         {
           "datasource": { "type": "loki", "uid": "loki" },
-          "expr": "sum by (proxy_name) (count_over_time({job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"}[$__interval]))",
+          "expr": "sum by (proxy_name) (count_over_time({job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"} |= `$client_ip` |= `$user_agent` | json status_class, scheme | status_class=~`$status_class` | scheme=~`$scheme` [$__interval]))",
           "legendFormat": "{{proxy_name}}",
           "queryType": "range",
           "refId": "A"
@@ -83,7 +83,7 @@
       "targets": [
         {
           "datasource": { "type": "loki", "uid": "loki" },
-          "expr": "sum by (proxy_name, status_class) (count_over_time({job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"} | json status_class | status_class=~\"4xx|5xx\" [$__interval]))",
+          "expr": "sum by (proxy_name, status_class) (count_over_time({job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"} |= `$client_ip` |= `$user_agent` | json status_class, scheme | status_class=~`$status_class` | scheme=~`$scheme` | status_class=~`4xx|5xx` [$__interval]))",
           "legendFormat": "{{proxy_name}} {{status_class}}",
           "queryType": "range",
           "refId": "A"
@@ -108,21 +108,21 @@
       "targets": [
         {
           "datasource": { "type": "loki", "uid": "loki" },
-          "expr": "quantile_over_time(0.50, {job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"} | json bytes_sent | unwrap bytes_sent | __error__=\"\" [$__interval]) by (proxy_name)",
+          "expr": "quantile_over_time(0.50, {job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"} |= `$client_ip` |= `$user_agent` | json bytes_sent, status_class, scheme | status_class=~`$status_class` | scheme=~`$scheme` | unwrap bytes_sent | __error__=\"\" [$__interval]) by (proxy_name)",
           "legendFormat": "{{proxy_name}} p50",
           "queryType": "range",
           "refId": "A"
         },
         {
           "datasource": { "type": "loki", "uid": "loki" },
-          "expr": "quantile_over_time(0.95, {job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"} | json bytes_sent | unwrap bytes_sent | __error__=\"\" [$__interval]) by (proxy_name)",
+          "expr": "quantile_over_time(0.95, {job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"} |= `$client_ip` |= `$user_agent` | json bytes_sent, status_class, scheme | status_class=~`$status_class` | scheme=~`$scheme` | unwrap bytes_sent | __error__=\"\" [$__interval]) by (proxy_name)",
           "legendFormat": "{{proxy_name}} p95",
           "queryType": "range",
           "refId": "B"
         },
         {
           "datasource": { "type": "loki", "uid": "loki" },
-          "expr": "quantile_over_time(0.99, {job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"} | json bytes_sent | unwrap bytes_sent | __error__=\"\" [$__interval]) by (proxy_name)",
+          "expr": "quantile_over_time(0.99, {job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"} |= `$client_ip` |= `$user_agent` | json bytes_sent, status_class, scheme | status_class=~`$status_class` | scheme=~`$scheme` | unwrap bytes_sent | __error__=\"\" [$__interval]) by (proxy_name)",
           "legendFormat": "{{proxy_name}} p99",
           "queryType": "range",
           "refId": "C"
@@ -147,7 +147,7 @@
       "targets": [
         {
           "datasource": { "type": "loki", "uid": "loki" },
-          "expr": "sum by (status_class) (count_over_time({job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"} | json status_class [$__interval]))",
+          "expr": "sum by (status_class) (count_over_time({job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"} |= `$client_ip` |= `$user_agent` | json status_class, scheme | status_class=~`$status_class` | scheme=~`$scheme` [$__interval]))",
           "legendFormat": "{{status_class}}",
           "queryType": "range",
           "refId": "A"
@@ -176,7 +176,7 @@
       "targets": [
         {
           "datasource": { "type": "loki", "uid": "loki" },
-          "expr": "topk(25, sum by (path) (count_over_time({job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"} | json path [$__range])))",
+          "expr": "topk(25, sum by (path) (count_over_time({job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"} |= `$client_ip` |= `$user_agent` | json path, status_class, scheme | status_class=~`$status_class` | scheme=~`$scheme` [$__range])))",
           "legendFormat": "",
           "queryType": "instant",
           "refId": "A"
@@ -192,7 +192,7 @@
         {
           "id": "organize",
           "options": {
-            "excludeByName": { "Time": true, "job": true, "log_type": true, "parse_state": true, "proxy_name": true, "proxy_host_id": true },
+            "excludeByName": { "Time": true, "job": true, "log_type": true, "parse_state": true, "proxy_name": true, "proxy_host_id": true, "status_class": true, "scheme": true },
             "indexByName": {},
             "renameByName": { "path": "Path", "Value #A": "Requests" }
           }
@@ -220,7 +220,7 @@
       "targets": [
         {
           "datasource": { "type": "loki", "uid": "loki" },
-          "expr": "topk(25, sum by (client_ip) (count_over_time({job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"} | json client_ip [$__range])))",
+          "expr": "topk(25, sum by (client_ip) (count_over_time({job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"} |= `$client_ip` |= `$user_agent` | json client_ip, status_class, scheme | status_class=~`$status_class` | scheme=~`$scheme` [$__range])))",
           "legendFormat": "",
           "queryType": "instant",
           "refId": "A"
@@ -236,7 +236,7 @@
         {
           "id": "organize",
           "options": {
-            "excludeByName": { "Time": true, "job": true, "log_type": true, "parse_state": true, "proxy_name": true, "proxy_host_id": true },
+            "excludeByName": { "Time": true, "job": true, "log_type": true, "parse_state": true, "proxy_name": true, "proxy_host_id": true, "status_class": true, "scheme": true },
             "indexByName": {},
             "renameByName": { "client_ip": "Client IP", "Value #A": "Requests" }
           }
@@ -260,7 +260,7 @@
       "targets": [
         {
           "datasource": { "type": "loki", "uid": "loki" },
-          "expr": "sum by (scheme) (count_over_time({job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"} | json scheme [$__interval]))",
+          "expr": "sum by (scheme) (count_over_time({job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"} |= `$client_ip` |= `$user_agent` | json scheme, status_class | status_class=~`$status_class` | scheme=~`$scheme` [$__interval]))",
           "legendFormat": "{{scheme}}",
           "queryType": "range",
           "refId": "A"
@@ -283,7 +283,7 @@
       "targets": [
         {
           "datasource": { "type": "loki", "uid": "loki" },
-          "expr": "topk(25, sum by (user_agent) (count_over_time({job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"} | json user_agent [$__range])))",
+          "expr": "topk(25, sum by (user_agent) (count_over_time({job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"} |= `$client_ip` |= `$user_agent` | json user_agent, status_class, scheme | status_class=~`$status_class` | scheme=~`$scheme` [$__range])))",
           "legendFormat": "",
           "queryType": "instant",
           "refId": "A"
@@ -299,7 +299,7 @@
         {
           "id": "organize",
           "options": {
-            "excludeByName": { "Time": true, "job": true, "log_type": true, "parse_state": true, "proxy_name": true, "proxy_host_id": true },
+            "excludeByName": { "Time": true, "job": true, "log_type": true, "parse_state": true, "proxy_name": true, "proxy_host_id": true, "status_class": true, "scheme": true },
             "indexByName": {},
             "renameByName": { "user_agent": "User Agent", "Value #A": "Requests" }
           }
@@ -324,7 +324,7 @@
       "targets": [
         {
           "datasource": { "type": "loki", "uid": "loki" },
-          "expr": "{job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"} | json",
+          "expr": "{job=\"npm\",log_type=\"access\",parse_state=\"parsed\",proxy_name=~\"$proxy_name\"} |= `$client_ip` |= `$user_agent` | json | status_class=~`$status_class` | scheme=~`$scheme`",
           "queryType": "range",
           "refId": "A"
         }
@@ -349,7 +349,7 @@
       "targets": [
         {
           "datasource": { "type": "loki", "uid": "loki" },
-          "expr": "{job=\"npm\",log_type=~\"error|fallback_error\",proxy_host_id=~\"$proxy_host_id|fallback\"} | json",
+          "expr": "{job=\"npm\",log_type=~\"error|fallback_error\",proxy_host_id=~\"$proxy_host_id|fallback\"} |= `$client_ip` |= `$user_agent` | json",
           "queryType": "range",
           "refId": "A"
         }
@@ -394,6 +394,58 @@
         "skipUrlSync": true,
         "sort": 1,
         "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "current": { "selected": true, "text": "All", "value": "$__all" },
+        "hide": 0,
+        "includeAll": true,
+        "multi": true,
+        "name": "status_class",
+        "options": [
+          { "selected": false, "text": "2xx", "value": "2xx" },
+          { "selected": false, "text": "3xx", "value": "3xx" },
+          { "selected": false, "text": "4xx", "value": "4xx" },
+          { "selected": false, "text": "5xx", "value": "5xx" }
+        ],
+        "query": "2xx,3xx,4xx,5xx",
+        "skipUrlSync": false,
+        "type": "custom"
+      },
+      {
+        "allValue": ".*",
+        "current": { "selected": true, "text": "All", "value": "$__all" },
+        "hide": 0,
+        "includeAll": true,
+        "multi": true,
+        "name": "scheme",
+        "options": [
+          { "selected": false, "text": "http", "value": "http" },
+          { "selected": false, "text": "https", "value": "https" }
+        ],
+        "query": "http,https",
+        "skipUrlSync": false,
+        "type": "custom"
+      },
+      {
+        "current": { "selected": false, "text": "", "value": "" },
+        "hide": 0,
+        "label": "Client IP",
+        "name": "client_ip",
+        "options": [],
+        "query": "",
+        "skipUrlSync": false,
+        "type": "textbox"
+      },
+      {
+        "current": { "selected": false, "text": "", "value": "" },
+        "hide": 0,
+        "label": "User Agent",
+        "name": "user_agent",
+        "options": [],
+        "query": "",
+        "skipUrlSync": false,
+        "type": "textbox"
       }
     ]
   },
@@ -402,6 +454,6 @@
   "timezone": "",
   "title": "Nginx Proxy Manager Logs",
   "uid": "npm-logs-overview",
-  "version": 8,
+  "version": 9,
   "weekStart": ""
 }
