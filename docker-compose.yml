@@ -1,48 +1,67 @@
 name: npm-logs
-
 services:
   loki:
     container_name: npm-logs-loki
     image: grafana/loki:3.1.1
     command: -config.file=/etc/loki/loki-config.yml
-    ports:
-      - "3100:3100"
     volumes:
-      - ./loki/loki-config.yml:/etc/loki/loki-config.yml:ro
-      - loki-data:/loki
+    - ./loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+    - loki-data:/loki
     restart: unless-stopped
-
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3100/metrics"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
   promtail:
     container_name: npm-logs-promtail
     image: grafana/promtail:3.1.1
     command: -config.file=/etc/promtail/promtail.yml
     depends_on:
-      - loki
+    - loki
+    group_add:
+    - '955'
     volumes:
-      - ./promtail/promtail.yml:/etc/promtail/promtail.yml:ro
-      - promtail-data:/var/lib/promtail
-      - ${NPM_LOG_DIR:-/data/compose/1/data/logs}:/var/log/npm:ro
+    - ./promtail/promtail.yml:/etc/promtail/promtail.yml:ro
+    - promtail-data:/var/lib/promtail
+    - ${NPM_LOG_DIR:-/opt/stacks/infra/npm/data/logs}:/var/log/npm:ro
+    - /var/run/docker.sock:/var/run/docker.sock:ro
     restart: unless-stopped
-
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9080/ready"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
   grafana:
     container_name: npm-logs-grafana
     image: grafana/grafana:11.1.0
     depends_on:
-      - loki
-    ports:
-      - "3010:3000"
+    - loki
     environment:
-      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
-      - GF_USERS_DEFAULT_THEME=system
+    - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+    - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+    - GF_USERS_DEFAULT_THEME=system
     volumes:
-      - grafana-data:/var/lib/grafana
-      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
-      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
-      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    - grafana-data:/var/lib/grafana
+    - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+    - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+    - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     restart: unless-stopped
-
+    networks:
+    - default
+    - proxy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 volumes:
-  loki-data:
-  promtail-data:
-  grafana-data:
+  loki-data: null
+  promtail-data: null
+  grafana-data: null
+networks:
+  proxy:
+    external: true

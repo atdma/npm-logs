@@ -106,3 +106,24 @@ scrape_configs:
           template: '{"proxy_id":"fallback","level":"{{ .level }}","message":"{{ .rest }}"}'
       - output:
           source: message_json
+
+  - job_name: docker_containers
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+    relabel_configs:
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: 'container'
+      - source_labels: ['__meta_docker_container_log_stream']
+        target_label: 'stream'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_project']
+        target_label: 'compose_project'
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
+        target_label: 'compose_service'
+      - target_label: 'job'
+        replacement: 'docker'
+    pipeline_stages:
+      - drop:
+          older_than: 24h
+          drop_counter_reason: docker_log_too_old
